@@ -2,16 +2,18 @@ service: wildrydes-serverlessfw
 plugins:
   - serverless-s3-sync
 
+# 変数
 custom:
   siteName: wildrydes-serverlessfw
   userPoolName: wildrydes-serverlessfw
   userPoolClientName: wildrydes-serverlessfw
   authorizerName: wildrydes-serverlessfw
-  dynamoTableName: wildrydes-serverlessfw
+  dynamoTableName: Rides
   s3Sync:
     - bucketName: ${self:custom.siteName}
       localDir: website
 
+# クラウドプロバイダ
 provider:
   name: aws
   runtime: nodejs6.10
@@ -19,34 +21,33 @@ provider:
   stage: prod
   region: us-east-1
 
+  # Lambdaの実行ロール(権限)
   iamRoleStatements:
     - Effect: "Allow"
       Action:
         - "dynamodb:PutItem"
       Resource: { "Fn::GetAtt" : [ DataTable, Arn ] }
 
+# Lambdaのデプロイパッケージに含めるディレクトリ
 package:
  include:
    - lambda/**
  exclude:
    - website/**
 
+# Lambdaの設定
 functions:
-  hello:
+  requestUnicorn:
     handler: lambda/requestUnicorn.handler
     events:
-      # API Gateway の設定
+      # API Gateway の設定 (イベントソース)
       - http:
           path: ride
           method: post
           cors: true
           integration: lambda
           # authorizer:
-          #   arn: { "Fn::GetAtt" : [ "UserPool", "Arn" ] }
-          #   # name: ${self:custom.authorizerName}
-          #   # id: { "Ref": "UserPool" }
-          #   # identitySource: method.request.header.Authorization
-          #   # type: COGNITO_USER_POOLS
+          #   arn: COGNITO_USER_POOL_ARN # change value after first deploy and redeploy
 
 resources:
  Resources:
@@ -112,6 +113,10 @@ resources:
       Description: "S3 Website URL"
       Value:
         "Fn::Join": [ "", [ "http://", { "Ref": "WebsiteBucket" }, ".s3-website-", "${self:provider.region}", ".amazonaws.com" ] ]
+    WebsiteBucket:
+      Description: "S3 Bucket"
+      Value:
+        Ref: WebsiteBucket
     UserPoolId:
       Description: "Cognito User Pool Name"
       Value:
@@ -124,6 +129,6 @@ resources:
       Description: "DynamoDB Table Name"
       Value: ${self:custom.dynamoTableName}
     UserPoolArn:
-      Description: "Cognito User Pool Name"
+      Description: "Cognito User Pool Arn"
       Value:
         "Fn::GetAtt" : [ UserPool, Arn ]
