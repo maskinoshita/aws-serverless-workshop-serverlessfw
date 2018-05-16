@@ -45,7 +45,7 @@ functions:
           path: ride
           method: post
           cors: true
-          integration: lambda
+          integration: lambda-proxy # Lambdaプロキシ統合
           # authorizer:
           #   arn: COGNITO_USER_POOL_ARN # change value after first deploy and redeploy
 
